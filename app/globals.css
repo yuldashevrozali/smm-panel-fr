@@ -565,6 +565,19 @@ video {
   font-weight: 700;
 }
 
+.order-field-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.order-empty-state {
+  min-height: auto;
+  padding: 18px;
+  border: 1px solid var(--soft-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.01);
+}
+
 .order-form input,
 .order-form select {
   width: 100%;
@@ -584,6 +597,11 @@ video {
 .order-form input:focus,
 .order-form select:focus {
   border-color: #8b5cf6;
+}
+
+.order-form select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .service-detail {
