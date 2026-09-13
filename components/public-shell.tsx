@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { locales, useLocale } from "@/lib/i18n";
 
@@ -18,9 +18,16 @@ export function PublicShell({ children }: { children: ReactNode }) {
     const pathname = usePathname();
     const { user, loading } = useAuth();
     const { locale, setLocale, t } = useLocale();
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathname.startsWith(href);
 
     return (
         <div className="public-shell">
+            <div
+                className={mobileMenuOpen ? "mobile-menu-backdrop is-visible" : "mobile-menu-backdrop"}
+                onClick={() => setMobileMenuOpen(false)}
+            />
             <header className="public-header">
                 <div className="public-header__inner public-content">
                     <Link href="/" className="brand-lockup" aria-label="SMMLY home">
@@ -28,26 +35,35 @@ export function PublicShell({ children }: { children: ReactNode }) {
                         <span className="brand-lockup__text">SMMLY</span>
                     </Link>
 
-                    <nav className="public-nav" aria-label="Primary navigation">
-                        {navItems.map((item) => {
-                            const isActive =
-                                item.href === "/"
-                                    ? pathname === "/"
-                                    : pathname.startsWith(item.href);
-
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={isActive ? "public-nav__link is-active" : "public-nav__link"}
-                                >
-                                    {t.publicShell[item.key]}
-                                </Link>
-                            );
-                        })}
+                    <nav
+                        className={mobileMenuOpen ? "public-nav is-open" : "public-nav"}
+                        aria-label="Primary navigation"
+                    >
+                        {navItems.map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={isActiveLink(item.href) ? "public-nav__link is-active" : "public-nav__link"}
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                {t.publicShell[item.key]}
+                            </Link>
+                        ))}
                     </nav>
 
                     <div className="public-header__actions">
+                        <button
+                            type="button"
+                            className="mobile-menu-toggle"
+                            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                            aria-expanded={mobileMenuOpen}
+                            onClick={() => setMobileMenuOpen((current) => !current)}
+                        >
+                            <span />
+                            <span />
+                            <span />
+                        </button>
+
                         <Link href="/services" className="button-link button-link--muted">
                             {t.publicShell.search}
                         </Link>
