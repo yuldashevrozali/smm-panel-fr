@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
@@ -18,6 +18,17 @@ export function TelegramLogin() {
   const [busy, setBusy] = useState(false);
   const id = useId().replace(/:/g, "");
   const botName = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
+  const loginRef = useRef(login);
+  const routerRef = useRef(router);
+  const searchParamsRef = useRef(searchParams);
+  const configHintRef = useRef(t.login.configHint);
+
+  useEffect(() => {
+    loginRef.current = login;
+    routerRef.current = router;
+    searchParamsRef.current = searchParams;
+    configHintRef.current = t.login.configHint;
+  }, [login, router, searchParams, t.login.configHint]);
 
   useEffect(() => {
     if (!botName) return;
@@ -26,12 +37,12 @@ export function TelegramLogin() {
       setBusy(true); setError(null);
       try {
         const authResponse = await api.telegramLogin(data as TelegramAuthData);
-        login(authResponse);
-        const next = searchParams.get("next") || "/dashboard";
-        router.replace(next);
+        loginRef.current(authResponse);
+        const next = searchParamsRef.current.get("next") || "/dashboard";
+        routerRef.current.replace(next);
       }
       catch (cause) {
-        setError(cause instanceof Error ? cause.message : t.login.configHint);
+        setError(cause instanceof Error ? cause.message : configHintRef.current);
       }
       finally {
         setBusy(false);
@@ -43,11 +54,10 @@ export function TelegramLogin() {
     script.setAttribute("data-telegram-login", botName);
     script.setAttribute("data-size", "large");
     script.setAttribute("data-radius", "12");
-    script.setAttribute("data-request-access", "write");
     script.setAttribute("data-onauth", `${callback}(user)`);
     document.getElementById(id)?.appendChild(script);
     return () => { delete window[callback]; };
-  }, [botName, id, login, router, searchParams, t.login.configHint]);
+  }, [botName, id]);
 
   if (!botName) return <p className="form-error">{t.login.configHint}</p>;
   return <div className="telegram-login"><div id={id} />{busy && <span>{t.login.verifying}</span>}{error && <p className="form-error">{error}</p>}</div>;
