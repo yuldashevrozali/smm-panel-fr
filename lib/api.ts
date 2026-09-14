@@ -1,4 +1,4 @@
-import type { AuthResponse, GoogleAuthData, Order, Service, TelegramAuthData, User } from "@/types/api";
+import type { AdminOrderList, AdminStats, AdminUserList, AuthResponse, GoogleAuthData, Order, Service, TelegramAuthData, User } from "@/types/api";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
@@ -54,4 +54,34 @@ export const api = {
   },
   createOrder: (token: string, order: { service_id: string | number; link: string; quantity: number }, idempotencyKey: string) =>
     request<Order>("/orders", { method: "POST", body: JSON.stringify(order), headers: { "Idempotency-Key": idempotencyKey } }, token),
+  adminStats: (token: string) => request<AdminStats>("/admin/stats", {}, token),
+  adminUsers: (token: string, params: { search?: string; role?: string; limit?: number; offset?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (params.search) q.set("search", params.search);
+    if (params.role) q.set("role", params.role);
+    if (params.limit !== undefined) q.set("limit", String(params.limit));
+    if (params.offset !== undefined) q.set("offset", String(params.offset));
+    const queryString = q.toString();
+    return request<AdminUserList>(`/admin/users${queryString ? `?${queryString}` : ""}`, {}, token);
+  },
+  adminUser: (token: string, userId: number | string) => request<User>(`/admin/users/${userId}`, {}, token),
+  adminOrders: (token: string, params: { status?: string; search?: string; limit?: number; offset?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (params.status) q.set("status", params.status);
+    if (params.search) q.set("search", params.search);
+    if (params.limit !== undefined) q.set("limit", String(params.limit));
+    if (params.offset !== undefined) q.set("offset", String(params.offset));
+    const queryString = q.toString();
+    return request<AdminOrderList>(`/admin/orders${queryString ? `?${queryString}` : ""}`, {}, token);
+  },
+  adminOrder: (token: string, orderId: number | string) => request<Order>(`/admin/orders/${orderId}`, {}, token),
+  adminServices: async (token: string): Promise<Service[]> => {
+    const res = await request<unknown>("/admin/services", {}, token);
+    return Array.isArray(res) ? (res as Service[]) : [];
+  },
+  adminAdmins: (token: string) => request<User[]>("/admin/admins", {}, token),
+  adminAddAdmin: (token: string, email: string) =>
+    request<User>("/admin/admins", { method: "POST", body: JSON.stringify({ email }) }, token),
+  adminRemoveAdmin: (token: string, userId: number | string) =>
+    request<{ message: string }>(`/admin/admins/${userId}`, { method: "DELETE" }, token),
 };

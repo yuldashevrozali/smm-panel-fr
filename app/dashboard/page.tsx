@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 import { api, ApiError } from "@/lib/api";
 import { ProtectedRoute } from "@/components/protected-route";
@@ -710,6 +711,12 @@ function DashboardApp() {
               {item.label}
             </button>
           ))}
+          {(user?.role === "admin" || user?.role === "super_admin") && (
+            <Link href="/admin" className="side-link side-link--admin">
+              <span>⚙</span>
+              Admin Panel
+            </Link>
+          )}
         </nav>
 
 

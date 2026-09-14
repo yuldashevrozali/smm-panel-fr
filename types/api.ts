@@ -1,3 +1,5 @@
+export type UserRole = "user" | "admin" | "super_admin";
+
 export type User = {
   id: number;
   telegram_id?: number | null;
@@ -5,6 +7,7 @@ export type User = {
   email?: string | null;
   username: string | null;
   first_name: string | null;
+  role?: UserRole;
   balance: number;
   created_at?: string;
 };
@@ -46,6 +49,7 @@ export type Service = {
 
 export type Order = {
   id: number | string;
+  user_id?: number | string;
   external_order_id: string;
   service_id: string | number;
   link: string;
@@ -61,4 +65,28 @@ export type OrderPage = {
   page: number;
   page_size: number;
   total: number;
+};
+
+export type AdminStats = {
+  total_users: number;
+  total_orders: number;
+  pending_orders: number;
+  completed_orders: number;
+  failed_orders: number;
+  total_revenue: number | string;
+  total_user_balance: number | string;
+};
+
+export type AdminUserList = {
+  items: User[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export type AdminOrderList = {
+  items: Order[];
+  total: number;
+  limit: number;
+  offset: number;
 };
