@@ -8,13 +8,11 @@ import {
 } from "react";
 
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
 
 import { api, ApiError } from "@/lib/api";
 import { ProtectedRoute } from "@/components/protected-route";
 import { useAuth } from "@/components/auth-provider";
-import { locales, useLocale } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n";
 
 import type { Order, Service } from "@/types/api";
 
@@ -26,6 +24,7 @@ import {
 
 import { ServiceCascade } from "@/components/service-cascade";
 import { BalanceSection } from "@/components/balance-section";
+import { AppShell } from "@/components/app-shell";
 
 
 type View =
@@ -47,63 +46,10 @@ const unavailable = (error: unknown) =>
 
 function DashboardApp() {
   const { user, token, logout } = useAuth();
-  const { locale, setLocale, t } = useLocale();
+  const { t } = useLocale();
   const searchParams = useSearchParams();
 
-
-  const navigation: {
-    id: View;
-    label: string;
-    icon: string;
-  }[] = [
-      {
-        id: "dashboard",
-        label: t.dashboard.navDashboard,
-        icon: "⌂",
-      },
-      {
-        id: "new-order",
-        label: t.dashboard.navNewOrder,
-        icon: "+",
-      },
-      {
-        id: "orders",
-        label: t.dashboard.navOrders,
-        icon: "▤",
-      },
-      {
-        id: "services",
-        label: t.dashboard.navServices,
-        icon: "◈",
-      },
-      {
-        id: "balance",
-        label: t.dashboard.navBalance,
-        icon: "$",
-      },
-      {
-        id: "profile",
-        label: t.dashboard.navProfile,
-        icon: "◉",
-      },
-    ];
-
-
   const [view, setView] = useState<View>("dashboard");
-
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    if (sidebarOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [sidebarOpen]);
-
 
   const [services, setServices] =
     useState<Service[]>([]);
@@ -672,745 +618,148 @@ function DashboardApp() {
 
 
   return (
-    <div className="saas-shell">
+    <AppShell
+      titleKey={heading[currentView][0]}
+      subtitleKey={heading[currentView][1]}
+      activeNavId={currentView}
+      onNavSelect={(navId) => {
+        setView(navId);
+        setError(null);
+        setNotice(null);
+      }}
+    >
+      {/* ALERTS */}
 
-      {/* Mobile overlay */}
-      <div
-        className={
-          sidebarOpen
-            ? "mobile-drawer-overlay is-visible"
-            : "mobile-drawer-overlay"
-        }
-        onClick={() => setSidebarOpen(false)}
-        aria-hidden="true"
-      />
+      {error && (
+        <div
+          className="alert error-alert"
+          role="alert"
+        >
+          {error}
 
-
-      {/* SIDEBAR */}
-      <aside
-        className={
-          sidebarOpen
-            ? "app-sidebar is-open"
-            : "app-sidebar"
-        }
-        role="dialog"
-        aria-modal={sidebarOpen ? "true" : undefined}
-        aria-label="Sidebar navigation"
-      >
-        <div className="app-sidebar__header">
-          <div className="app-brand">
-            <Image
-              src="/logo1.png"
-              alt="Sifat SMM"
-              width={28}
-              height={28}
-              className="brand-logo-img brand-logo-img--small"
-            />
-            <span className="brand-text-full">Sifat SMM</span>
-            <span className="brand-text-medium">Sifat</span>
-          </div>
           <button
-            type="button"
-            className="mobile-drawer-close"
-            aria-label="Close navigation"
-            onClick={() => setSidebarOpen(false)}
+            onClick={() =>
+              setError(null)
+            }
+            aria-label="Close error"
           >
             ×
           </button>
         </div>
+      )}
 
 
-        <nav>
-          {navigation.map((item) => (
-            <button
-              key={item.id}
-              className={
-                currentView === item.id
-                  ? "side-link active"
-                  : "side-link"
-              }
-              onClick={() => {
-                setView(item.id);
-                setError(null);
-                setNotice(null);
-                setSidebarOpen(false);
-              }}
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-          {(user?.role === "admin" || user?.role === "super_admin") && (
-            <Link
-              href="/admin"
-              className="side-link side-link--admin"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <span>⚙</span>
-              Admin Panel
-            </Link>
-          )}
-        </nav>
-
-
-        <button
-          className="logout-link"
-          onClick={() => {
-            setSidebarOpen(false);
-            logout();
-          }}
+      {notice && (
+        <div
+          className="alert success-alert"
+          role="status"
         >
-          {t.dashboard.signOut}
-          <span>→</span>
-        </button>
-      </aside>
+          {notice}
 
-
-      {/* MAIN */}
-      <main className="app-main">
-
-        {/* TOP BAR */}
-        <header className="app-topbar">
-
-          <div className="app-topbar__start">
-
-            <button
-              type="button"
-              className="mobile-nav-toggle"
-              aria-label="Open navigation"
-              aria-expanded={sidebarOpen}
-              onClick={() =>
-                setSidebarOpen(true)
-              }
-            >
-              <span />
-              <span />
-              <span />
-            </button>
-
-            <Link href="/dashboard" className="mobile-topbar-brand" aria-label="Sifat SMM home">
-              <Image
-                src="/logo1.png"
-                alt="Sifat SMM"
-                width={26}
-                height={26}
-                className="brand-logo-img"
-              />
-              <span className="brand-text-full">Sifat SMM</span>
-              <span className="brand-text-medium">Sifat</span>
-            </Link>
-
-
-            <div className="app-topbar__title">
-              <p className="section-kicker">
-                {heading[currentView][0]}
-              </p>
-
-              <h1>
-                {heading[currentView][1]}
-              </h1>
-            </div>
-
-          </div>
-
-
-          <div className="app-topbar__end">
-
-            <div className="account-chip">
-
-              <span>
-                {(
-                  user?.first_name?.[0] ??
-                  "U"
-                ).toUpperCase()}
-              </span>
-
-              <div>
-                <strong>
-                  {user?.first_name ??
-                    t.dashboard.accountChip}
-                </strong>
-
-                <small>
-                  {user?.username
-                    ? `@${user.username}`
-                    : t.dashboard.telegramUser}
-                </small>
-              </div>
-
-            </div>
-
-
-            <label className="language-switcher language-switcher--inline">
-
-              <span className="sr-only">
-                {t.dashboard.selectLanguage}
-              </span>
-
-              <select
-                value={locale}
-                onChange={(event) =>
-                  setLocale(
-                    event.target.value as
-                    | "en"
-                    | "uz"
-                    | "ru",
-                  )
-                }
-              >
-                {locales.map((item) => (
-                  <option
-                    key={item.code}
-                    value={item.code}
-                  >
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-
-            </label>
-
-          </div>
-
-        </header>
-
-
-        {/* ALERTS */}
-
-        {error && (
-          <div
-            className="alert error-alert"
-            role="alert"
+          <button
+            onClick={() =>
+              setNotice(null)
+            }
+            aria-label="Close notification"
           >
-            {error}
+            ×
+          </button>
+        </div>
+      )}
 
-            <button
-              onClick={() =>
-                setError(null)
+
+      {/* ========================= */}
+      {/* DASHBOARD */}
+      {/* ========================= */}
+
+      {currentView === "dashboard" && (
+        <>
+
+          <section className="stat-grid">
+
+            <Stat
+              label={
+                t.dashboard.availableBalance
               }
-              aria-label="Close error"
-            >
-              ×
-            </button>
-          </div>
-        )}
+              value={money(
+                user?.balance ?? 0,
+              )}
+              accent
+            />
 
-
-        {notice && (
-          <div
-            className="alert success-alert"
-            role="status"
-          >
-            {notice}
-
-            <button
-              onClick={() =>
-                setNotice(null)
+            <Stat
+              label={
+                t.dashboard.totalOrders
               }
-              aria-label="Close notification"
-            >
-              ×
-            </button>
-          </div>
-        )}
-
-
-        {/* ========================= */}
-        {/* DASHBOARD */}
-        {/* ========================= */}
-
-        {currentView === "dashboard" && (
-          <>
-
-            <section className="stat-grid">
-
-              <Stat
-                label={
-                  t.dashboard.availableBalance
-                }
-                value={money(
-                  user?.balance ?? 0,
-                )}
-                accent
-              />
-
-              <Stat
-                label={
-                  t.dashboard.totalOrders
-                }
-                value={
-                  loadingOrders
-                    ? "…"
-                    : ordersPending
-                      ? "—"
-                      : String(
-                        safeOrders.length,
-                      )
-                }
-              />
-
-              <Stat
-                label={
-                  t.dashboard.inProgress
-                }
-                value={
-                  loadingOrders
-                    ? "…"
-                    : ordersPending
-                      ? "—"
-                      : String(pending)
-                }
-              />
-
-              <Stat
-                label={
-                  t.dashboard.completed
-                }
-                value={
-                  loadingOrders
-                    ? "…"
-                    : ordersPending
-                      ? "—"
-                      : String(completed)
-                }
-              />
-
-            </section>
-
-
-            <section className="content-card">
-
-              <div className="card-heading">
-
-                <div>
-                  <p>
-                    {t.dashboard.recentActivity}
-                  </p>
-
-                  <h2>
-                    {t.dashboard.latestOrders}
-                  </h2>
-                </div>
-
-
-                <button
-                  className="text-action"
-                  onClick={() =>
-                    setView("orders")
-                  }
-                >
-                  {t.dashboard.viewAll}
-                </button>
-
-              </div>
-
-
-              <OrdersTable
-                orders={safeOrders.slice(0, 5)}
-                loading={loadingOrders}
-                pending={ordersPending}
-                title={
-                  t.dashboard.noOrdersYet
-                }
-                description={
-                  t.dashboard.ordersWillAppear
-                }
-                pendingTitle={
-                  t.dashboard.ordersIntegration
-                }
-                pendingText={
-                  t.dashboard.ordersIntegrationText
-                }
-                columns={{
-                  order:
-                    t.dashboard.tableOrder,
-                  service:
-                    t.dashboard.tableService,
-                  quantity:
-                    t.dashboard.tableQuantity,
-                  charge:
-                    t.dashboard.tableCharge,
-                  status:
-                    t.dashboard.tableStatus,
-                }}
-              />
-
-            </section>
-
-
-            <section className="quick-card">
-
-              <div>
-                <p className="section-kicker">
-                  {t.dashboard.readyWhenYouAre}
-                </p>
-
-                <h2>
-                  {t.dashboard.startCampaign}
-                </h2>
-
-                <p>
-                  {t.dashboard.chooseServices}
-                </p>
-              </div>
-
-
-              <button
-                className="primary-btn"
-                onClick={() =>
-                  setView("new-order")
-                }
-              >
-                {t.dashboard.createOrder}
-                <span>→</span>
-              </button>
-
-            </section>
-
-          </>
-        )}
-
-
-        {/* ========================= */}
-        {/* SERVICES */}
-        {/* ========================= */}
-
-        {currentView === "services" && (
-          <section className="content-card">
-
-            <div className="card-heading">
-
-              <div>
-                <p>
-                  {t.dashboard.catalog}
-                </p>
-
-                <h2>
-                  {t.dashboard.availableServices}
-                </h2>
-              </div>
-
-            </div>
-
-
-            <ServicesGrid
-              services={services}
-              loading={loadingServices}
-              pending={servicesPending}
-              onSelect={beginOrder}
-              emptyTitle={
-                t.dashboard.noServicesAvailable
+              value={
+                loadingOrders
+                  ? "…"
+                  : ordersPending
+                    ? "—"
+                    : String(
+                      safeOrders.length,
+                    )
               }
-              emptyText={
-                t.dashboard.checkBackLater
+            />
+
+            <Stat
+              label={
+                t.dashboard.inProgress
               }
-              pendingTitle={
-                t.dashboard.servicesIntegration
+              value={
+                loadingOrders
+                  ? "…"
+                  : ordersPending
+                    ? "—"
+                    : String(pending)
               }
-              pendingText={
-                t.dashboard.servicesIntegrationText
+            />
+
+            <Stat
+              label={
+                t.dashboard.completed
+              }
+              value={
+                loadingOrders
+                  ? "…"
+                  : ordersPending
+                    ? "—"
+                    : String(completed)
               }
             />
 
           </section>
-        )}
 
 
-        {/* ========================= */}
-        {/* NEW ORDER */}
-        {/* ========================= */}
-
-        {currentView === "new-order" && (
-          <section className="order-layout">
-
-            <form
-              className="content-card order-form"
-              onSubmit={placeOrder}
-            >
-
-              <div className="card-heading">
-
-                <div>
-                  <p>
-                    {t.dashboard.orderDetails}
-                  </p>
-
-                  <h2>
-                    {t.dashboard.setUpOrder}
-                  </h2>
-                </div>
-
-              </div>
-
-
-              {servicesPending ? (
-
-                <IntegrationPending
-                  title={
-                    t.dashboard.servicesIntegration
-                  }
-                  description={
-                    t.dashboard.servicesIntegrationText
-                  }
-                />
-
-              ) : loadingServices ? (
-
-                <div className="skeleton large" />
-
-              ) : (
-
-                <>
-
-                  {/* ================================= */}
-                  {/* 1. PLATFORM                       */}
-                  {/* 2. SERVICE TYPE                   */}
-                  {/* 3. EXACT SERVICE                  */}
-                  {/* ================================= */}
-
-                  <ServiceCascade
-                    services={services}
-                    platform={
-                      effectiveSelectedPlatform
-                    }
-                    serviceType={
-                      effectiveSelectedServiceType
-                    }
-                    serviceId={
-                      effectiveSelectedService
-                        ? String(
-                          effectiveSelectedService.service,
-                        )
-                        : ""
-                    }
-                    onPlatformChange={
-                      handlePlatformChange
-                    }
-                    onServiceTypeChange={
-                      handleServiceTypeChange
-                    }
-                    onServiceChange={
-                      handleServiceChange
-                    }
-                    disabled={
-                      submitting
-                    }
-                  />
-
-
-                  {/* SERVICE DETAILS */}
-
-                  {effectiveSelectedService && (
-                    <div className="service-detail">
-
-                      <strong>
-                        {
-                          effectiveSelectedService.name
-                        }
-                      </strong>
-
-
-                      <p>
-                        {
-                          effectiveSelectedService
-                            .description ||
-                          t.dashboard.serviceDetails
-                        }
-                      </p>
-
-
-                      <span>
-                        {t.dashboard.minimum}{" "}
-                        {effectiveSelectedService.min.toLocaleString()}
-                        {" · "}
-                        {t.dashboard.maximum}{" "}
-                        {effectiveSelectedService.max.toLocaleString()}
-                      </span>
-
-                    </div>
-                  )}
-
-
-                  {/* TARGET LINK */}
-
-                  <label>
-                    {t.dashboard.targetLink}
-
-                    <input
-                      type="url"
-                      value={link}
-                      onChange={(event) => {
-                        setLink(
-                          event.target.value,
-                        );
-                        setOrderRequestKey(
-                          null,
-                        );
-                      }}
-                      placeholder={
-                        t.dashboard.insertLink
-                      }
-                      required
-                      disabled={
-                        !effectiveSelectedService ||
-                        submitting
-                      }
-                    />
-                  </label>
-
-
-                  {/* QUANTITY */}
-
-                  <label>
-                    {t.dashboard.quantity}
-
-                    <input
-                      type="number"
-                      value={
-                        quantity || ""
-                      }
-                      onChange={(event) => {
-                        setQuantity(
-                          Number(
-                            event.target.value,
-                          ),
-                        );
-
-                        setOrderRequestKey(
-                          null,
-                        );
-                      }}
-                      min={
-                        effectiveSelectedService?.min
-                      }
-                      max={
-                        effectiveSelectedService?.max
-                      }
-                      required
-                      disabled={
-                        !effectiveSelectedService ||
-                        submitting
-                      }
-                    />
-                  </label>
-
-
-                  {/* SUBMIT */}
-
-                  <button
-                    type="submit"
-                    className="primary-btn full"
-                    disabled={
-                      submitting ||
-                      !effectiveSelectedService
-                    }
-                  >
-                    {submitting
-                      ? t.dashboard.submitting
-                      : t.dashboard.submitOrder}
-                  </button>
-
-                </>
-              )}
-
-            </form>
-
-
-            {/* ORDER SUMMARY */}
-
-            <aside className="summary-card">
-
-              <p>
-                {t.dashboard.orderSummary}
-              </p>
-
-
-              <h2>
-                {effectiveSelectedService
-                  ? effectiveSelectedService.name
-                  : effectiveSelectedServiceType
-                    ? `${effectiveSelectedPlatform} · ${effectiveSelectedServiceType}`
-                    : effectiveSelectedPlatform ||
-                    t.dashboard.chooseService}
-              </h2>
-
-
-              <div>
-
-                <span>
-                  {t.dashboard.rate}
-                </span>
-
-                <strong>
-                  {effectiveSelectedService
-                    ? `${money(
-                      effectiveSelectedService.rate,
-                    )} / 1K`
-                    : "—"}
-                </strong>
-
-              </div>
-
-
-              <div>
-
-                <span>
-                  {t.dashboard.estimatedPrice}
-                </span>
-
-                <strong>
-                  {effectiveSelectedService
-                    ? money(estimated)
-                    : "—"}
-                </strong>
-
-              </div>
-
-
-              <small>
-                {t.dashboard.estimateOnly}
-              </small>
-
-            </aside>
-
-          </section>
-        )}
-
-
-        {/* ========================= */}
-        {/* ORDERS */}
-        {/* ========================= */}
-
-        {currentView === "orders" && (
           <section className="content-card">
 
             <div className="card-heading">
 
               <div>
                 <p>
-                  {t.dashboard.orderHistory}
+                  {t.dashboard.recentActivity}
                 </p>
 
                 <h2>
-                  {t.dashboard.allOrders}
+                  {t.dashboard.latestOrders}
                 </h2>
               </div>
 
 
               <button
-                className="primary-btn compact"
+                className="text-action"
                 onClick={() =>
-                  setView("new-order")
+                  setView("orders")
                 }
               >
-                {t.dashboard.newOrderButton}
+                {t.dashboard.viewAll}
               </button>
 
             </div>
 
 
             <OrdersTable
-              orders={safeOrders}
+              orders={safeOrders.slice(0, 5)}
               loading={loadingOrders}
               pending={ordersPending}
               title={
@@ -1440,89 +789,491 @@ function DashboardApp() {
             />
 
           </section>
-        )}
 
 
-        {/* ========================= */}
-        {/* BALANCE */}
-        {/* ========================= */}
+          <section className="quick-card">
 
-        {currentView === "balance" && <BalanceSection />}
+            <div>
+              <p className="section-kicker">
+                {t.dashboard.readyWhenYouAre}
+              </p>
+
+              <h2>
+                {t.dashboard.startCampaign}
+              </h2>
+
+              <p>
+                {t.dashboard.chooseServices}
+              </p>
+            </div>
 
 
-        {/* ========================= */}
-        {/* PROFILE */}
-        {/* ========================= */}
-
-        {currentView === "profile" && (
-          <section className="content-card profile-grid">
-
-            <ProfileField
-              label={
-                t.dashboard.firstName
+            <button
+              className="primary-btn"
+              onClick={() =>
+                setView("new-order")
               }
-              value={
-                user?.first_name ??
-                t.dashboard.notProvided
-              }
-            />
-
-            <ProfileField
-              label={
-                t.dashboard.telegramUsername
-              }
-              value={
-                user?.username
-                  ? `@${user.username}`
-                  : t.dashboard.notProvided
-              }
-            />
-
-            <ProfileField
-              label={
-                t.dashboard.telegramId
-              }
-              value={String(
-                user?.telegram_id ?? "",
-              )}
-            />
-
-            <ProfileField
-              label={
-                t.dashboard.accountId
-              }
-              value={String(
-                user?.id ?? "",
-              )}
-            />
-
-            <ProfileField
-              label={
-                t.dashboard.balanceTitle
-              }
-              value={money(
-                user?.balance ?? 0,
-              )}
-            />
-
-            <ProfileField
-              label={
-                t.dashboard.created
-              }
-              value={
-                user?.created_at
-                  ? new Date(
-                    user.created_at,
-                  ).toLocaleDateString()
-                  : t.dashboard.notProvided
-              }
-            />
+            >
+              {t.dashboard.createOrder}
+              <span>→</span>
+            </button>
 
           </section>
-        )}
 
-      </main>
-    </div>
+        </>
+      )}
+
+
+      {/* ========================= */}
+      {/* SERVICES */}
+      {/* ========================= */}
+
+      {currentView === "services" && (
+        <section className="content-card">
+
+          <div className="card-heading">
+
+            <div>
+              <p>
+                {t.dashboard.catalog}
+              </p>
+
+              <h2>
+                {t.dashboard.availableServices}
+              </h2>
+            </div>
+
+          </div>
+
+
+          <ServicesGrid
+            services={services}
+            loading={loadingServices}
+            pending={servicesPending}
+            onSelect={beginOrder}
+            emptyTitle={
+              t.dashboard.noServicesAvailable
+            }
+            emptyText={
+              t.dashboard.checkBackLater
+            }
+            pendingTitle={
+              t.dashboard.servicesIntegration
+            }
+            pendingText={
+              t.dashboard.servicesIntegrationText
+            }
+          />
+
+        </section>
+      )}
+
+
+      {/* ========================= */}
+      {/* NEW ORDER */}
+      {/* ========================= */}
+
+      {currentView === "new-order" && (
+        <section className="order-layout">
+
+          <form
+            className="content-card order-form"
+            onSubmit={placeOrder}
+          >
+
+            <div className="card-heading">
+
+              <div>
+                <p>
+                  {t.dashboard.orderDetails}
+                </p>
+
+                <h2>
+                  {t.dashboard.setUpOrder}
+                </h2>
+              </div>
+
+            </div>
+
+
+            {servicesPending ? (
+
+              <IntegrationPending
+                title={
+                  t.dashboard.servicesIntegration
+                }
+                description={
+                  t.dashboard.servicesIntegrationText
+                }
+              />
+
+            ) : loadingServices ? (
+
+              <div className="skeleton large" />
+
+            ) : (
+
+              <>
+
+                {/* ================================= */}
+                {/* 1. PLATFORM                       */}
+                {/* 2. SERVICE TYPE                   */}
+                {/* 3. EXACT SERVICE                  */}
+                {/* ================================= */}
+
+                <ServiceCascade
+                  services={services}
+                  platform={
+                    effectiveSelectedPlatform
+                  }
+                  serviceType={
+                    effectiveSelectedServiceType
+                  }
+                  serviceId={
+                    effectiveSelectedService
+                      ? String(
+                        effectiveSelectedService.service,
+                      )
+                      : ""
+                  }
+                  onPlatformChange={
+                    handlePlatformChange
+                  }
+                  onServiceTypeChange={
+                    handleServiceTypeChange
+                  }
+                  onServiceChange={
+                    handleServiceChange
+                  }
+                  disabled={
+                    submitting
+                  }
+                />
+
+
+                {/* SERVICE DETAILS */}
+
+                {effectiveSelectedService && (
+                  <div className="service-detail">
+
+                    <strong>
+                      {
+                        effectiveSelectedService.name
+                      }
+                    </strong>
+
+
+                    <p>
+                      {
+                        effectiveSelectedService
+                          .description ||
+                        t.dashboard.serviceDetails
+                      }
+                    </p>
+
+
+                    <span>
+                      {t.dashboard.minimum}{" "}
+                      {effectiveSelectedService.min.toLocaleString()}
+                      {" · "}
+                      {t.dashboard.maximum}{" "}
+                      {effectiveSelectedService.max.toLocaleString()}
+                    </span>
+
+                  </div>
+                )}
+
+
+                {/* TARGET LINK */}
+
+                <label>
+                  {t.dashboard.targetLink}
+
+                  <input
+                    type="url"
+                    value={link}
+                    onChange={(event) => {
+                      setLink(
+                        event.target.value,
+                      );
+                      setOrderRequestKey(
+                        null,
+                      );
+                    }}
+                    placeholder={
+                      t.dashboard.insertLink
+                    }
+                    required
+                    disabled={
+                      !effectiveSelectedService ||
+                      submitting
+                    }
+                  />
+                </label>
+
+
+                {/* QUANTITY */}
+
+                <label>
+                  {t.dashboard.quantity}
+
+                  <input
+                    type="number"
+                    value={
+                      quantity || ""
+                    }
+                    onChange={(event) => {
+                      setQuantity(
+                        Number(
+                          event.target.value,
+                        ),
+                      );
+
+                      setOrderRequestKey(
+                        null,
+                      );
+                    }}
+                    min={
+                      effectiveSelectedService?.min
+                    }
+                    max={
+                      effectiveSelectedService?.max
+                    }
+                    required
+                    disabled={
+                      !effectiveSelectedService ||
+                      submitting
+                    }
+                  />
+                </label>
+
+
+                {/* SUBMIT */}
+
+                <button
+                  type="submit"
+                  className="primary-btn full"
+                  disabled={
+                    submitting ||
+                    !effectiveSelectedService
+                  }
+                >
+                  {submitting
+                    ? t.dashboard.submitting
+                    : t.dashboard.submitOrder}
+                </button>
+
+              </>
+            )}
+
+          </form>
+
+
+          {/* ORDER SUMMARY */}
+
+          <aside className="summary-card">
+
+            <p>
+              {t.dashboard.orderSummary}
+            </p>
+
+
+            <h2>
+              {effectiveSelectedService
+                ? effectiveSelectedService.name
+                : effectiveSelectedServiceType
+                  ? `${effectiveSelectedPlatform} · ${effectiveSelectedServiceType}`
+                  : effectiveSelectedPlatform ||
+                  t.dashboard.chooseService}
+            </h2>
+
+
+            <div>
+
+              <span>
+                {t.dashboard.rate}
+              </span>
+
+              <strong>
+                {effectiveSelectedService
+                  ? `${money(
+                    effectiveSelectedService.rate,
+                  )} / 1K`
+                  : "—"}
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                {t.dashboard.estimatedPrice}
+              </span>
+
+              <strong>
+                {effectiveSelectedService
+                  ? money(estimated)
+                  : "—"}
+              </strong>
+
+            </div>
+
+
+            <small>
+              {t.dashboard.estimateOnly}
+            </small>
+
+          </aside>
+
+        </section>
+      )}
+
+
+      {/* ========================= */}
+      {/* ORDERS */}
+      {/* ========================= */}
+
+      {currentView === "orders" && (
+        <section className="content-card">
+
+          <div className="card-heading">
+
+            <div>
+              <p>
+                {t.dashboard.orderHistory}
+              </p>
+
+              <h2>
+                {t.dashboard.allOrders}
+              </h2>
+            </div>
+
+
+            <button
+              className="primary-btn compact"
+              onClick={() =>
+                setView("new-order")
+              }
+            >
+              {t.dashboard.newOrderButton}
+            </button>
+
+          </div>
+
+
+          <OrdersTable
+            orders={safeOrders}
+            loading={loadingOrders}
+            pending={ordersPending}
+            title={
+              t.dashboard.noOrdersYet
+            }
+            description={
+              t.dashboard.ordersWillAppear
+            }
+            pendingTitle={
+              t.dashboard.ordersIntegration
+            }
+            pendingText={
+              t.dashboard.ordersIntegrationText
+            }
+            columns={{
+              order:
+                t.dashboard.tableOrder,
+              service:
+                t.dashboard.tableService,
+              quantity:
+                t.dashboard.tableQuantity,
+              charge:
+                t.dashboard.tableCharge,
+              status:
+                t.dashboard.tableStatus,
+            }}
+          />
+
+        </section>
+      )}
+
+
+      {/* ========================= */}
+      {/* BALANCE */}
+      {/* ========================= */}
+
+      {currentView === "balance" && <BalanceSection />}
+
+
+      {/* ========================= */}
+      {/* PROFILE */}
+      {/* ========================= */}
+
+      {currentView === "profile" && (
+        <section className="content-card profile-grid">
+
+          <ProfileField
+            label={
+              t.dashboard.firstName
+            }
+            value={
+              user?.first_name ??
+              t.dashboard.notProvided
+            }
+          />
+
+          <ProfileField
+            label={
+              t.dashboard.telegramUsername
+            }
+            value={
+              user?.username
+                ? `@${user.username}`
+                : t.dashboard.notProvided
+            }
+          />
+
+          <ProfileField
+            label={
+              t.dashboard.telegramId
+            }
+            value={String(
+              user?.telegram_id ?? "",
+            )}
+          />
+
+          <ProfileField
+            label={
+              t.dashboard.accountId
+            }
+            value={String(
+              user?.id ?? "",
+            )}
+          />
+
+          <ProfileField
+            label={
+              t.dashboard.balanceTitle
+            }
+            value={money(
+              user?.balance ?? 0,
+            )}
+          />
+
+          <ProfileField
+            label={
+              t.dashboard.created
+            }
+            value={
+              user?.created_at
+                ? new Date(
+                  user.created_at,
+                ).toLocaleDateString()
+                : t.dashboard.notProvided
+            }
+          />
+
+        </section>
+      )}
+    </AppShell>
   );
 }
 
