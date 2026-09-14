@@ -2,15 +2,16 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { ProtectedRoute } from "@/components/protected-route";
 import { ServiceCard } from "@/components/service-card";
 import { api, ApiError } from "@/lib/api";
 import { normalizeServices, PLATFORM_ORDER, type PlatformName } from "@/lib/service-catalog";
-import type { AdminStats, Order, Service, User } from "@/types/api";
+import type { AdminPayment, AdminStats, Order, Service, User } from "@/types/api";
 
-type AdminTab = "overview" | "users" | "orders" | "services" | "admins";
+type AdminTab = "overview" | "users" | "orders" | "services" | "payments" | "admins";
 
 function formatMoney(value: string | number | undefined) {
     const numeric = Number(value ?? 0);
@@ -51,6 +52,20 @@ function AdminApp() {
     const [loadingAdmins, setLoadingAdmins] = useState(false);
     const [newAdminEmail, setNewAdminEmail] = useState("");
     const [addingAdmin, setAddingAdmin] = useState(false);
+
+    // Payments state
+    const [payments, setPayments] = useState<AdminPayment[]>([]);
+    const [totalPayments, setTotalPayments] = useState(0);
+    const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
+    const [paymentsPage, setPaymentsPage] = useState(0);
+    const [paymentSearch, setPaymentSearch] = useState("");
+    const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
+    const [loadingPayments, setLoadingPayments] = useState(false);
+
+    // Reject Modal state
+    const [rejectingPayment, setRejectingPayment] = useState<AdminPayment | null>(null);
+    const [rejectionReason, setRejectionReason] = useState("");
+    const [processingAction, setProcessingAction] = useState(false);
 
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
@@ -180,6 +195,93 @@ function AdminApp() {
         return () => { active = false; };
     }, [token, tab]);
 
+    // Load Payments tab data (and keep pending count updated)
+    useEffect(() => {
+        if (!token) return;
+
+        let active = true;
+        api.adminPayments(token, {
+            search: tab === "payments" ? (paymentSearch.trim() || undefined) : undefined,
+            status: tab === "payments" ? (paymentStatusFilter || undefined) : undefined,
+            limit: 20,
+            offset: paymentsPage * 20,
+        })
+            .then((data) => {
+                if (active) {
+                    setPendingPaymentsCount(data.pending_count);
+                    if (tab === "payments") {
+                        setPayments(data.items);
+                        setTotalPayments(data.total);
+                    }
+                }
+            })
+            .catch((cause) => {
+                if (active && tab === "payments") {
+                    setError(cause instanceof Error ? cause.message : "Failed to load payments");
+                }
+            })
+            .finally(() => {
+                if (active && tab === "payments") setLoadingPayments(false);
+            });
+
+        return () => { active = false; };
+    }, [token, tab, paymentSearch, paymentStatusFilter, paymentsPage]);
+
+    const handleApprovePayment = async (paymentId: number) => {
+        if (!token || processingAction) return;
+        setProcessingAction(true);
+        setError(null);
+        setNotice(null);
+
+        try {
+            const approved = await api.adminApprovePayment(token, paymentId);
+            setNotice(`Payment #${approved.id} for ${formatMoney(approved.amount)} approved successfully.`);
+
+            const updated = await api.adminPayments(token, {
+                search: paymentSearch.trim() || undefined,
+                status: paymentStatusFilter || undefined,
+                limit: 20,
+                offset: paymentsPage * 20,
+            });
+            setPayments(updated.items);
+            setTotalPayments(updated.total);
+            setPendingPaymentsCount(updated.pending_count);
+        } catch (cause) {
+            setError(cause instanceof Error ? cause.message : "Failed to approve payment.");
+        } finally {
+            setProcessingAction(false);
+        }
+    };
+
+    const handleConfirmReject = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!token || !rejectingPayment || processingAction) return;
+        setProcessingAction(true);
+        setError(null);
+        setNotice(null);
+
+        try {
+            const rejected = await api.adminRejectPayment(token, rejectingPayment.id, rejectionReason.trim() || undefined);
+            setNotice(`Payment #${rejected.id} rejected.`);
+            setRejectingPayment(null);
+            setRejectionReason("");
+
+            const updated = await api.adminPayments(token, {
+                search: paymentSearch.trim() || undefined,
+                status: paymentStatusFilter || undefined,
+                limit: 20,
+                offset: paymentsPage * 20,
+            });
+            setPayments(updated.items);
+            setTotalPayments(updated.total);
+            setPendingPaymentsCount(updated.pending_count);
+        } catch (cause) {
+            setError(cause instanceof Error ? cause.message : "Failed to reject payment.");
+        } finally {
+            setProcessingAction(false);
+        }
+    };
+
     const handleAddAdmin = async (e: FormEvent) => {
         e.preventDefault();
         if (!token || !newAdminEmail.trim() || !isSuperAdmin) return;
@@ -228,8 +330,15 @@ function AdminApp() {
         <div className="saas-shell">
             <aside className="app-sidebar">
                 <div className="app-brand">
-                    <span className="brand-mark small-mark">S</span>
-                    SMMLY ADMIN
+                    <Image
+                        src="/logo1.png"
+                        alt="Sifat SMM"
+                        width={28}
+                        height={28}
+                        className="brand-logo-img brand-logo-img--small"
+                    />
+                    <span className="brand-text-full">Sifat SMM Admin</span>
+                    <span className="brand-text-medium">Sifat Admin</span>
                 </div>
 
                 <nav>
@@ -258,6 +367,12 @@ function AdminApp() {
                         <span>⚡</span> Services
                     </button>
                     <button
+                        className={tab === "payments" ? "side-link active" : "side-link"}
+                        onClick={() => { setTab("payments"); setError(null); setNotice(null); }}
+                    >
+                        <span>💳</span> Payments {pendingPaymentsCount > 0 && `(${pendingPaymentsCount})`}
+                    </button>
+                    <button
                         className={tab === "admins" ? "side-link active" : "side-link"}
                         onClick={() => { setTab("admins"); setError(null); setNotice(null); }}
                     >
@@ -282,6 +397,7 @@ function AdminApp() {
                             {tab === "users" && "User Management"}
                             {tab === "orders" && "Order Management"}
                             {tab === "services" && "Provider Service Catalog"}
+                            {tab === "payments" && "Payment Requests"}
                             {tab === "admins" && "Admin Access Control"}
                         </h1>
                     </div>
@@ -643,6 +759,153 @@ function AdminApp() {
                                 </div>
                             )}
                         </section>
+                    </div>
+                )}
+
+                {/* PAYMENTS TAB */}
+                {tab === "payments" && (
+                    <section className="content-card">
+                        <div className="admin-filter-bar">
+                            <input
+                                type="text"
+                                placeholder="Search by Payment ID, User ID, Email, or Name..."
+                                value={paymentSearch}
+                                onChange={(e) => { setPaymentSearch(e.target.value); setPaymentsPage(0); }}
+                                className="admin-search-input"
+                            />
+                            <select
+                                value={paymentStatusFilter}
+                                onChange={(e) => { setPaymentStatusFilter(e.target.value); setPaymentsPage(0); }}
+                                className="admin-select-input"
+                            >
+                                <option value="">All Statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                        </div>
+
+                        {loadingPayments ? (
+                            <div className="skeleton large" />
+                        ) : !payments.length ? (
+                            <div className="empty-state">
+                                <span>💳</span>
+                                <h3>No payment requests found</h3>
+                                <p>Try adjusting your search criteria or status filter.</p>
+                            </div>
+                        ) : (
+                            <div className="orders-table">
+                                <div className="table-head admin-payment-head">
+                                    <span>ID</span>
+                                    <span>User / Email</span>
+                                    <span>Amount</span>
+                                    <span>Method</span>
+                                    <span>Status</span>
+                                    <span>Created</span>
+                                    <span>Reviewed By</span>
+                                    <span>Actions</span>
+                                </div>
+                                {payments.map((p) => (
+                                    <div key={p.id} className="table-row admin-payment-row">
+                                        <span>#{p.id}</span>
+                                        <div>
+                                            <strong>{p.user_email || p.user_name || `User #${p.user_id}`}</strong>
+                                            <small>User #{p.user_id}</small>
+                                        </div>
+                                        <strong>{formatMoney(p.amount)}</strong>
+                                        <span className="payment-method-tag">{p.method.toUpperCase()}</span>
+                                        <span className={`status-pill status-pill--${p.status}`}>{p.status}</span>
+                                        <small>{p.created_at ? new Date(p.created_at).toLocaleDateString() : "—"}</small>
+                                        <small>{p.reviewer_email || (p.reviewed_by ? `Admin #${p.reviewed_by}` : "—")}</small>
+                                        <div>
+                                            {p.status === "pending" ? (
+                                                <div className="admin-action-btn-group">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleApprovePayment(p.id)}
+                                                        disabled={processingAction}
+                                                        className="admin-success-btn"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setRejectingPayment(p); setRejectionReason(""); }}
+                                                        disabled={processingAction}
+                                                        className="admin-danger-btn"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <span className={`status-tag status-tag--${p.status}`}>
+                                                    {p.status === "approved" ? "Approved" : "Rejected"}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="admin-pagination">
+                            <button
+                                disabled={paymentsPage === 0 || loadingPayments}
+                                onClick={() => setPaymentsPage((prev) => Math.max(0, prev - 1))}
+                                className="secondary-btn compact"
+                            >
+                                Previous
+                            </button>
+                            <span>
+                                Page {paymentsPage + 1} of {Math.ceil(totalPayments / 20) || 1}
+                            </span>
+                            <button
+                                disabled={(paymentsPage + 1) * 20 >= totalPayments || loadingPayments}
+                                onClick={() => setPaymentsPage((prev) => prev + 1)}
+                                className="secondary-btn compact"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </section>
+                )}
+
+                {/* REJECT PAYMENT MODAL */}
+                {rejectingPayment && (
+                    <div className="modal-backdrop">
+                        <div className="modal-box">
+                            <h3>Reject Payment #{rejectingPayment.id}?</h3>
+                            <p>
+                                Amount: <strong>{formatMoney(rejectingPayment.amount)}</strong> — User:{" "}
+                                <strong>{rejectingPayment.user_email || `User #${rejectingPayment.user_id}`}</strong>
+                            </p>
+
+                            <form onSubmit={handleConfirmReject} className="admin-reject-form">
+                                <label className="service-select-field">
+                                    <span>Rejection Reason (Optional)</span>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Payment could not be verified."
+                                        value={rejectionReason}
+                                        onChange={(e) => setRejectionReason(e.target.value)}
+                                    />
+                                </label>
+
+                                <div className="modal-actions">
+                                    <button
+                                        type="button"
+                                        className="secondary-btn"
+                                        onClick={() => { setRejectingPayment(null); setRejectionReason(""); }}
+                                        disabled={processingAction}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="admin-danger-btn large-btn" disabled={processingAction}>
+                                        {processingAction ? "Rejecting…" : "Confirm Rejection"}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 )}
             </main>

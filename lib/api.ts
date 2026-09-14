@@ -1,4 +1,4 @@
-import type { AdminOrderList, AdminStats, AdminUserList, AuthResponse, GoogleAuthData, Order, Service, TelegramAuthData, User } from "@/types/api";
+import type { AdminOrderList, AdminPayment, AdminPaymentList, AdminStats, AdminUserList, AuthResponse, GoogleAuthData, Order, PaymentRequest, Service, TelegramAuthData, User } from "@/types/api";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
@@ -84,4 +84,24 @@ export const api = {
     request<User>("/admin/admins", { method: "POST", body: JSON.stringify({ email }) }, token),
   adminRemoveAdmin: (token: string, userId: number | string) =>
     request<{ message: string }>(`/admin/admins/${userId}`, { method: "DELETE" }, token),
+  createPaymentRequest: (token: string, data: { amount: number; method: string; currency: string }) =>
+    request<PaymentRequest>("/payments/requests", { method: "POST", body: JSON.stringify(data) }, token),
+  myPaymentRequests: async (token: string): Promise<PaymentRequest[]> => {
+    const res = await request<unknown>("/payments/requests", {}, token);
+    return Array.isArray(res) ? (res as PaymentRequest[]) : [];
+  },
+  adminPayments: (token: string, params: { status?: string; search?: string; limit?: number; offset?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (params.status) q.set("status", params.status);
+    if (params.search) q.set("search", params.search);
+    if (params.limit !== undefined) q.set("limit", String(params.limit));
+    if (params.offset !== undefined) q.set("offset", String(params.offset));
+    const queryString = q.toString();
+    return request<AdminPaymentList>(`/admin/payments${queryString ? `?${queryString}` : ""}`, {}, token);
+  },
+  adminPaymentDetail: (token: string, paymentId: number | string) => request<AdminPayment>(`/admin/payments/${paymentId}`, {}, token),
+  adminApprovePayment: (token: string, paymentId: number | string) =>
+    request<AdminPayment>(`/admin/payments/${paymentId}/approve`, { method: "POST" }, token),
+  adminRejectPayment: (token: string, paymentId: number | string, reason?: string) =>
+    request<AdminPayment>(`/admin/payments/${paymentId}/reject`, { method: "POST", body: JSON.stringify({ rejection_reason: reason }) }, token),
 };

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useState } from "react";
@@ -30,9 +31,17 @@ export function PublicShell({ children }: { children: ReactNode }) {
             />
             <header className="public-header">
                 <div className="public-header__inner public-content">
-                    <Link href="/" className="brand-lockup" aria-label="SMMLY home">
-                        <span className="brand-lockup__mark">S</span>
-                        <span className="brand-lockup__text">SMMLY</span>
+                    <Link href="/" className="brand-lockup" aria-label="Sifat SMM home">
+                        <Image
+                            src="/logo1.png"
+                            alt="Sifat SMM"
+                            width={32}
+                            height={32}
+                            className="brand-logo-img"
+                            priority
+                        />
+                        <span className="brand-text-full">Sifat SMM</span>
+                        <span className="brand-text-medium">Sifat</span>
                     </Link>
 
                     <nav
@@ -108,8 +117,15 @@ export function PublicShell({ children }: { children: ReactNode }) {
                 <div className="public-content public-footer__inner">
                     <div>
                         <div className="brand-lockup brand-lockup--footer">
-                            <span className="brand-lockup__mark">S</span>
-                            <span className="brand-lockup__text">SMMLY</span>
+                            <Image
+                                src="/logo1.png"
+                                alt="Sifat SMM"
+                                width={32}
+                                height={32}
+                                className="brand-logo-img"
+                            />
+                            <span className="brand-text-full">Sifat SMM</span>
+                            <span className="brand-text-medium">Sifat</span>
                         </div>
                         <p className="public-footer__copy">{t.publicShell.footerCopy}</p>
                     </div>

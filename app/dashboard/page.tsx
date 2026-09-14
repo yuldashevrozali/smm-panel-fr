@@ -9,6 +9,7 @@ import {
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 import { api, ApiError } from "@/lib/api";
 import { ProtectedRoute } from "@/components/protected-route";
@@ -24,6 +25,7 @@ import {
 } from "@/lib/service-catalog";
 
 import { ServiceCascade } from "@/components/service-cascade";
+import { BalanceSection } from "@/components/balance-section";
 
 
 type View =
@@ -684,10 +686,15 @@ function DashboardApp() {
         }
       >
         <div className="app-brand">
-          <span className="brand-mark small-mark">
-            S
-          </span>
-          SMMLY
+          <Image
+            src="/logo1.png"
+            alt="Sifat SMM"
+            width={28}
+            height={28}
+            className="brand-logo-img brand-logo-img--small"
+          />
+          <span className="brand-text-full">Sifat SMM</span>
+          <span className="brand-text-medium">Sifat</span>
         </div>
 
 
@@ -1398,32 +1405,7 @@ function DashboardApp() {
         {/* BALANCE */}
         {/* ========================= */}
 
-        {currentView === "balance" && (
-          <section className="balance-card">
-
-            <p className="section-kicker">
-              {t.dashboard.availableCredit}
-            </p>
-
-            <h2>
-              {money(
-                user?.balance ?? 0,
-              )}
-            </h2>
-
-            <p>
-              {t.dashboard.balancesLoaded}
-            </p>
-
-            <button
-              className="secondary-btn"
-              disabled
-            >
-              {t.dashboard.addFundsSoon}
-            </button>
-
-          </section>
-        )}
+        {currentView === "balance" && <BalanceSection />}
 
 
         {/* ========================= */}

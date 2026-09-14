@@ -3,8 +3,11 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
 
 export const metadata: Metadata = {
-  title: "SMMLY",
-  description: "SMM services workspace",
+  title: "Sifat SMM",
+  description: "Sifat SMM - Social Media Growth Platform",
+  icons: {
+    icon: "/logo1.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

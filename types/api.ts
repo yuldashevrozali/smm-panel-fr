@@ -90,3 +90,34 @@ export type AdminOrderList = {
   limit: number;
   offset: number;
 };
+
+export type PaymentMethod = "crypto" | "uzs_card" | "visa" | "admin";
+export type PaymentStatus = "pending" | "approved" | "rejected";
+
+export type PaymentRequest = {
+  id: number;
+  user_id: number;
+  amount: number | string;
+  currency: string;
+  method: string;
+  status: PaymentStatus;
+  rejection_reason?: string | null;
+  reviewed_by?: number | null;
+  reviewed_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type AdminPayment = PaymentRequest & {
+  user_email?: string | null;
+  user_name?: string | null;
+  reviewer_email?: string | null;
+};
+
+export type AdminPaymentList = {
+  items: AdminPayment[];
+  total: number;
+  pending_count: number;
+  limit: number;
+  offset: number;
+};

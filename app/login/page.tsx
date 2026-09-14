@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TelegramLogin } from "@/components/telegram-login";
@@ -23,7 +24,16 @@ function LoginPageContent() {
   return (
     <main className="login-page">
       <section className="login-card">
-        <div className="brand-mark">S</div>
+        <div className="login-brand-header">
+          <Image
+            src="/logo1.png"
+            alt="Sifat SMM"
+            width={48}
+            height={48}
+            className="brand-logo-img brand-logo-img--large"
+            priority
+          />
+        </div>
         <p className="eyebrow">{t.login.workspace}</p>
         <h1>{t.login.title}</h1>
         <p className="login-copy">{t.login.copy}</p>
@@ -48,7 +58,7 @@ export default function LoginPage() {
   const { t } = useLocale();
 
   return (
-    <Suspense fallback={<main className="login-page"><section className="login-card"><div className="brand-mark">S</div><p className="eyebrow">{t.login.workspace}</p><h1>{t.login.title}</h1><p className="login-copy">{t.login.loading}</p></section></main>}>
+    <Suspense fallback={<main className="login-page"><section className="login-card"><div className="login-brand-header"><Image src="/logo1.png" alt="Sifat SMM" width={48} height={48} className="brand-logo-img brand-logo-img--large" priority /></div><p className="eyebrow">{t.login.workspace}</p><h1>{t.login.title}</h1><p className="login-copy">{t.login.loading}</p></section></main>}>
       <LoginPageContent />
     </Suspense>
   );
