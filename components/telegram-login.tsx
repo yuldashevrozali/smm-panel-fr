@@ -38,6 +38,7 @@ export function TelegramLogin() {
       try {
         const authResponse = await api.telegramLogin(data as TelegramAuthData);
         loginRef.current(authResponse);
+
         const next = searchParamsRef.current.get("next") || "/dashboard";
         routerRef.current.replace(next);
       }

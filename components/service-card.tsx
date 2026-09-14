@@ -17,12 +17,14 @@ export function ServiceCard({ service }: { service: Service }) {
     const { t } = useLocale();
 
     const handleOrderClick = () => {
+        const nextUrl = `/dashboard?service_id=${encodeURIComponent(String(service.service))}`;
+
         if (user) {
-            router.push("/dashboard");
+            router.push(nextUrl);
             return;
         }
 
-        router.push("/login?next=/dashboard");
+        router.push(`/login?next=${encodeURIComponent(nextUrl)}`);
     };
 
     return (

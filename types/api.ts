@@ -31,6 +31,10 @@ export type Service = {
   rate: string | number;
   min: number;
   max: number;
+  type?: string | null;
+  refill?: boolean;
+  cancel?: boolean;
+  dripfeed?: boolean;
   description?: string;
 };
 
