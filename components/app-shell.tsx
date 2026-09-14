@@ -3,16 +3,19 @@
 import { useEffect, ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { useNavigation } from "@/components/navigation-provider";
 import { locales, useLocale } from "@/lib/i18n";
 
+type NavId = "dashboard" | "new-order" | "orders" | "services" | "balance" | "profile";
+
 type AppShellProps = {
     children: ReactNode;
-    titleKey: string;
-    subtitleKey: string;
-    activeNavId: "dashboard" | "new-order" | "orders" | "services" | "balance" | "profile";
-    onNavSelect: (id: "dashboard" | "new-order" | "orders" | "services" | "balance" | "profile") => void;
+    titleKey?: string;
+    subtitleKey?: string;
+    activeNavId?: NavId;
+    onNavSelect?: (id: NavId) => void;
 };
 
 export function AppShell({
@@ -25,6 +28,8 @@ export function AppShell({
     const { user, logout } = useAuth();
     const { locale, setLocale, t } = useLocale();
     const { mobileNavOpen, setMobileNavOpen, closeMobileNav } = useNavigation();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     useEffect(() => {
         if (mobileNavOpen) {
@@ -37,17 +42,49 @@ export function AppShell({
         };
     }, [mobileNavOpen]);
 
+    // Automatically determine active navigation item if not explicitly provided
+    let effectiveActiveId: NavId = activeNavId || "dashboard";
+    if (!activeNavId) {
+        const tabParam = searchParams.get("tab") || searchParams.get("view");
+        if (pathname.startsWith("/new-order") || tabParam === "new-order") {
+            effectiveActiveId = "new-order";
+        } else if (pathname.startsWith("/orders") || tabParam === "orders") {
+            effectiveActiveId = "orders";
+        } else if (pathname.startsWith("/services") || tabParam === "services") {
+            effectiveActiveId = "services";
+        } else if (pathname.startsWith("/balance") || tabParam === "balance") {
+            effectiveActiveId = "balance";
+        } else if (pathname.startsWith("/profile") || tabParam === "profile") {
+            effectiveActiveId = "profile";
+        } else {
+            effectiveActiveId = "dashboard";
+        }
+    }
+
+    const defaultTitles: Record<NavId, [string, string]> = {
+        dashboard: [t.dashboard.overview, `${t.dashboard.welcome}, ${user?.first_name ?? t.dashboard.guestUser}`],
+        "new-order": [t.dashboard.newOrder, t.dashboard.createOrderFromLive],
+        orders: [t.dashboard.ordersTitle, t.dashboard.trackOrders],
+        services: [t.dashboard.servicesTitle, t.dashboard.liveCatalog],
+        balance: [t.dashboard.balanceTitle, t.dashboard.accountCredit],
+        profile: [t.dashboard.profileTitle, t.dashboard.profileSubtitle],
+    };
+
+    const currentTitle = titleKey ?? defaultTitles[effectiveActiveId]?.[0] ?? t.dashboard.overview;
+    const currentSubtitle = subtitleKey ?? defaultTitles[effectiveActiveId]?.[1] ?? t.dashboard.welcome;
+
     const navigation: {
-        id: "dashboard" | "new-order" | "orders" | "services" | "balance" | "profile";
+        id: NavId;
+        href: string;
         label: string;
         icon: string;
     }[] = [
-            { id: "dashboard", label: t.dashboard.navDashboard, icon: "⌂" },
-            { id: "new-order", label: t.dashboard.navNewOrder, icon: "+" },
-            { id: "orders", label: t.dashboard.navOrders, icon: "▤" },
-            { id: "services", label: t.dashboard.navServices, icon: "◈" },
-            { id: "balance", label: t.dashboard.navBalance, icon: "$" },
-            { id: "profile", label: t.dashboard.navProfile, icon: "◉" },
+            { id: "dashboard", href: "/dashboard", label: t.dashboard.navDashboard, icon: "⌂" },
+            { id: "new-order", href: "/new-order", label: t.dashboard.navNewOrder, icon: "+" },
+            { id: "orders", href: "/orders", label: t.dashboard.navOrders, icon: "▤" },
+            { id: "services", href: "/services", label: t.dashboard.navServices, icon: "◈" },
+            { id: "balance", href: "/balance", label: t.dashboard.navBalance, icon: "$" },
+            { id: "profile", href: "/profile", label: t.dashboard.navProfile, icon: "◉" },
         ];
 
     return (
@@ -90,17 +127,18 @@ export function AppShell({
 
                 <nav>
                     {navigation.map((item) => (
-                        <button
+                        <Link
                             key={item.id}
-                            className={activeNavId === item.id ? "side-link active" : "side-link"}
+                            href={item.href}
+                            className={effectiveActiveId === item.id ? "side-link active" : "side-link"}
                             onClick={() => {
-                                onNavSelect(item.id);
+                                if (onNavSelect) onNavSelect(item.id);
                                 closeMobileNav();
                             }}
                         >
                             <span>{item.icon}</span>
                             {item.label}
-                        </button>
+                        </Link>
                     ))}
                     {(user?.role === "admin" || user?.role === "super_admin") && (
                         <Link
@@ -139,8 +177,8 @@ export function AppShell({
                             onClick={() => setMobileNavOpen(true)}
                         >
                             <svg
-                                width="20"
-                                height="20"
+                                width="22"
+                                height="22"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -168,8 +206,8 @@ export function AppShell({
                         </Link>
 
                         <div className="app-topbar__title">
-                            <p className="section-kicker">{titleKey}</p>
-                            <h1>{subtitleKey}</h1>
+                            <p className="section-kicker">{currentTitle}</p>
+                            <h1>{currentSubtitle}</h1>
                         </div>
                     </div>
 
