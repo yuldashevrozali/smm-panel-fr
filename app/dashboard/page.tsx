@@ -91,8 +91,18 @@ function DashboardApp() {
 
   const [view, setView] = useState<View>("dashboard");
 
-  const [sidebarOpen, setSidebarOpen] =
-    useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [sidebarOpen]);
 
 
   const [services, setServices] =
@@ -671,9 +681,8 @@ function DashboardApp() {
             ? "mobile-drawer-overlay is-visible"
             : "mobile-drawer-overlay"
         }
-        onClick={() =>
-          setSidebarOpen(false)
-        }
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden="true"
       />
 
 
@@ -684,17 +693,30 @@ function DashboardApp() {
             ? "app-sidebar is-open"
             : "app-sidebar"
         }
+        role="dialog"
+        aria-modal={sidebarOpen ? "true" : undefined}
+        aria-label="Sidebar navigation"
       >
-        <div className="app-brand">
-          <Image
-            src="/logo1.png"
-            alt="Sifat SMM"
-            width={28}
-            height={28}
-            className="brand-logo-img brand-logo-img--small"
-          />
-          <span className="brand-text-full">Sifat SMM</span>
-          <span className="brand-text-medium">Sifat</span>
+        <div className="app-sidebar__header">
+          <div className="app-brand">
+            <Image
+              src="/logo1.png"
+              alt="Sifat SMM"
+              width={28}
+              height={28}
+              className="brand-logo-img brand-logo-img--small"
+            />
+            <span className="brand-text-full">Sifat SMM</span>
+            <span className="brand-text-medium">Sifat</span>
+          </div>
+          <button
+            type="button"
+            className="mobile-drawer-close"
+            aria-label="Close navigation"
+            onClick={() => setSidebarOpen(false)}
+          >
+            ×
+          </button>
         </div>
 
 
@@ -719,7 +741,11 @@ function DashboardApp() {
             </button>
           ))}
           {(user?.role === "admin" || user?.role === "super_admin") && (
-            <Link href="/admin" className="side-link side-link--admin">
+            <Link
+              href="/admin"
+              className="side-link side-link--admin"
+              onClick={() => setSidebarOpen(false)}
+            >
               <span>⚙</span>
               Admin Panel
             </Link>
@@ -729,7 +755,10 @@ function DashboardApp() {
 
         <button
           className="logout-link"
-          onClick={logout}
+          onClick={() => {
+            setSidebarOpen(false);
+            logout();
+          }}
         >
           {t.dashboard.signOut}
           <span>→</span>
@@ -748,7 +777,8 @@ function DashboardApp() {
             <button
               type="button"
               className="mobile-nav-toggle"
-              aria-label="Open dashboard menu"
+              aria-label="Open navigation"
+              aria-expanded={sidebarOpen}
               onClick={() =>
                 setSidebarOpen(true)
               }
@@ -758,8 +788,20 @@ function DashboardApp() {
               <span />
             </button>
 
+            <Link href="/dashboard" className="mobile-topbar-brand" aria-label="Sifat SMM home">
+              <Image
+                src="/logo1.png"
+                alt="Sifat SMM"
+                width={26}
+                height={26}
+                className="brand-logo-img"
+              />
+              <span className="brand-text-full">Sifat SMM</span>
+              <span className="brand-text-medium">Sifat</span>
+            </Link>
 
-            <div>
+
+            <div className="app-topbar__title">
               <p className="section-kicker">
                 {heading[currentView][0]}
               </p>

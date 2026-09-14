@@ -67,6 +67,20 @@ function AdminApp() {
     const [rejectionReason, setRejectionReason] = useState("");
     const [processingAction, setProcessingAction] = useState(false);
 
+    // Mobile sidebar drawer state
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    useEffect(() => {
+        if (sidebarOpen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [sidebarOpen]);
+
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
 
@@ -328,78 +342,125 @@ function AdminApp() {
 
     return (
         <div className="saas-shell">
-            <aside className="app-sidebar">
-                <div className="app-brand">
-                    <Image
-                        src="/logo1.png"
-                        alt="Sifat SMM"
-                        width={28}
-                        height={28}
-                        className="brand-logo-img brand-logo-img--small"
-                    />
-                    <span className="brand-text-full">Sifat SMM Admin</span>
-                    <span className="brand-text-medium">Sifat Admin</span>
+            <div
+                className={sidebarOpen ? "mobile-drawer-overlay is-visible" : "mobile-drawer-overlay"}
+                onClick={() => setSidebarOpen(false)}
+                aria-hidden="true"
+            />
+
+            <aside
+                className={sidebarOpen ? "app-sidebar is-open" : "app-sidebar"}
+                role="dialog"
+                aria-modal={sidebarOpen ? "true" : undefined}
+                aria-label="Admin sidebar navigation"
+            >
+                <div className="app-sidebar__header">
+                    <div className="app-brand">
+                        <Image
+                            src="/logo1.png"
+                            alt="Sifat SMM"
+                            width={28}
+                            height={28}
+                            className="brand-logo-img brand-logo-img--small"
+                        />
+                        <span className="brand-text-full">Sifat SMM Admin</span>
+                        <span className="brand-text-medium">Sifat Admin</span>
+                    </div>
+                    <button
+                        type="button"
+                        className="mobile-drawer-close"
+                        aria-label="Close navigation"
+                        onClick={() => setSidebarOpen(false)}
+                    >
+                        ×
+                    </button>
                 </div>
 
                 <nav>
                     <button
                         className={tab === "overview" ? "side-link active" : "side-link"}
-                        onClick={() => { setTab("overview"); setError(null); setNotice(null); }}
+                        onClick={() => { setTab("overview"); setError(null); setNotice(null); setSidebarOpen(false); }}
                     >
                         <span>📊</span> Overview
                     </button>
                     <button
                         className={tab === "users" ? "side-link active" : "side-link"}
-                        onClick={() => { setTab("users"); setError(null); setNotice(null); }}
+                        onClick={() => { setTab("users"); setError(null); setNotice(null); setSidebarOpen(false); }}
                     >
                         <span>👥</span> Users
                     </button>
                     <button
                         className={tab === "orders" ? "side-link active" : "side-link"}
-                        onClick={() => { setTab("orders"); setError(null); setNotice(null); }}
+                        onClick={() => { setTab("orders"); setError(null); setNotice(null); setSidebarOpen(false); }}
                     >
                         <span>📦</span> Orders
                     </button>
                     <button
                         className={tab === "services" ? "side-link active" : "side-link"}
-                        onClick={() => { setTab("services"); setError(null); setNotice(null); }}
+                        onClick={() => { setTab("services"); setError(null); setNotice(null); setSidebarOpen(false); }}
                     >
                         <span>⚡</span> Services
                     </button>
                     <button
                         className={tab === "payments" ? "side-link active" : "side-link"}
-                        onClick={() => { setTab("payments"); setError(null); setNotice(null); }}
+                        onClick={() => { setTab("payments"); setError(null); setNotice(null); setSidebarOpen(false); }}
                     >
                         <span>💳</span> Payments {pendingPaymentsCount > 0 && `(${pendingPaymentsCount})`}
                     </button>
                     <button
                         className={tab === "admins" ? "side-link active" : "side-link"}
-                        onClick={() => { setTab("admins"); setError(null); setNotice(null); }}
+                        onClick={() => { setTab("admins"); setError(null); setNotice(null); setSidebarOpen(false); }}
                     >
                         <span>🛡️</span> Admins
                     </button>
-                    <Link href="/dashboard" className="side-link">
+                    <Link href="/dashboard" className="side-link" onClick={() => setSidebarOpen(false)}>
                         <span>←</span> User Dashboard
                     </Link>
                 </nav>
 
-                <button className="logout-link" onClick={logout}>
+                <button className="logout-link" onClick={() => { setSidebarOpen(false); logout(); }}>
                     Sign out <span>→</span>
                 </button>
             </aside>
 
             <main className="app-main">
                 <header className="app-topbar">
-                    <div>
-                        <p className="section-kicker">ADMINISTRATION PANEL</p>
-                        <h1>
-                            {tab === "overview" && "System Overview"}
-                            {tab === "users" && "User Management"}
-                            {tab === "orders" && "Order Management"}
-                            {tab === "services" && "Provider Service Catalog"}
-                            {tab === "payments" && "Payment Requests"}
-                            {tab === "admins" && "Admin Access Control"}
-                        </h1>
+                    <div className="app-topbar__start">
+                        <button
+                            type="button"
+                            className="mobile-nav-toggle"
+                            aria-label="Open navigation"
+                            aria-expanded={sidebarOpen}
+                            onClick={() => setSidebarOpen(true)}
+                        >
+                            <span />
+                            <span />
+                            <span />
+                        </button>
+
+                        <Link href="/admin" className="mobile-topbar-brand" aria-label="Sifat SMM Admin home">
+                            <Image
+                                src="/logo1.png"
+                                alt="Sifat SMM"
+                                width={26}
+                                height={26}
+                                className="brand-logo-img"
+                            />
+                            <span className="brand-text-full">Sifat SMM Admin</span>
+                            <span className="brand-text-medium">Sifat Admin</span>
+                        </Link>
+
+                        <div className="app-topbar__title">
+                            <p className="section-kicker">ADMINISTRATION PANEL</p>
+                            <h1>
+                                {tab === "overview" && "System Overview"}
+                                {tab === "users" && "User Management"}
+                                {tab === "orders" && "Order Management"}
+                                {tab === "services" && "Provider Service Catalog"}
+                                {tab === "payments" && "Payment Requests"}
+                                {tab === "admins" && "Admin Access Control"}
+                            </h1>
+                        </div>
                     </div>
 
                     <div className="account-chip">
