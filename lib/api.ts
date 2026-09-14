@@ -1,4 +1,4 @@
-import type { AuthResponse, Order, Service, TelegramAuthData, User } from "@/types/api";
+import type { AuthResponse, GoogleAuthData, Order, Service, TelegramAuthData, User } from "@/types/api";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
@@ -32,6 +32,7 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
 
 export const api = {
   telegramLogin: (data: TelegramAuthData) => request<AuthResponse>("/auth/telegram", { method: "POST", body: JSON.stringify(data) }),
+  googleLogin: (data: GoogleAuthData) => request<AuthResponse>("/auth/google", { method: "POST", body: JSON.stringify(data) }),
   me: (token: string) => request<User>("/users/me", {}, token),
   publicServices: async (): Promise<Service[]> => {
     const res = await request<unknown>("/services");

@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TelegramLogin } from "@/components/telegram-login";
+import { GoogleLogin } from "@/components/google-login";
 import { useAuth } from "@/components/auth-provider";
 import { useLocale } from "@/lib/i18n";
 
@@ -19,7 +20,28 @@ function LoginPageContent() {
     }
   }, [loading, user, router, searchParams]);
 
-  return <main className="login-page"><section className="login-card"><div className="brand-mark">S</div><p className="eyebrow">{t.login.workspace}</p><h1>{t.login.title}</h1><p className="login-copy">{t.login.copy}</p><TelegramLogin /><p className="login-footer">{t.login.footer}</p></section></main>;
+  return (
+    <main className="login-page">
+      <section className="login-card">
+        <div className="brand-mark">S</div>
+        <p className="eyebrow">{t.login.workspace}</p>
+        <h1>{t.login.title}</h1>
+        <p className="login-copy">{t.login.copy}</p>
+
+        <div className="login-auth-options">
+          <TelegramLogin />
+
+          <div className="auth-divider">
+            <span>or</span>
+          </div>
+
+          <GoogleLogin />
+        </div>
+
+        <p className="login-footer">{t.login.footer}</p>
+      </section>
+    </main>
+  );
 }
 
 export default function LoginPage() {

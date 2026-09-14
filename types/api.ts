@@ -1,6 +1,8 @@
 export type User = {
   id: number;
-  telegram_id: number;
+  telegram_id?: number | null;
+  google_sub?: string | null;
+  email?: string | null;
   username: string | null;
   first_name: string | null;
   balance: number;
@@ -15,6 +17,10 @@ export type TelegramAuthData = {
   photo_url?: string;
   auth_date: number;
   hash: string;
+};
+
+export type GoogleAuthData = {
+  credential: string;
 };
 
 export type AuthResponse = {
