@@ -1,4 +1,4 @@
-import type { AuthResponse, Order, OrderPage, Service, TelegramAuthData, User } from "@/types/api";
+import type { AuthResponse, Order, Service, TelegramAuthData, User } from "@/types/api";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
@@ -33,9 +33,24 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
 export const api = {
   telegramLogin: (data: TelegramAuthData) => request<AuthResponse>("/auth/telegram", { method: "POST", body: JSON.stringify(data) }),
   me: (token: string) => request<User>("/users/me", {}, token),
-  publicServices: () => request<Service[]>("/services"),
-  services: (token: string) => request<Service[]>("/services", {}, token),
-  orders: (token: string) => request<OrderPage>("/orders", {}, token),
+  publicServices: async (): Promise<Service[]> => {
+    const res = await request<unknown>("/services");
+    return Array.isArray(res) ? (res as Service[]) : [];
+  },
+  services: async (token: string): Promise<Service[]> => {
+    const res = await request<unknown>("/services", {}, token);
+    return Array.isArray(res) ? (res as Service[]) : [];
+  },
+  orders: async (token: string): Promise<Order[]> => {
+    const res = await request<unknown>("/orders", {}, token);
+    if (Array.isArray(res)) {
+      return res as Order[];
+    }
+    if (res && typeof res === "object" && "items" in res && Array.isArray((res as { items: unknown }).items)) {
+      return (res as { items: Order[] }).items;
+    }
+    return [];
+  },
   createOrder: (token: string, order: { service_id: string | number; link: string; quantity: number }, idempotencyKey: string) =>
     request<Order>("/orders", { method: "POST", body: JSON.stringify(order), headers: { "Idempotency-Key": idempotencyKey } }, token),
 };

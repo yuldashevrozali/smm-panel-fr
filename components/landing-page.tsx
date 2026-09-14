@@ -47,7 +47,10 @@ export function LandingPage() {
 
         api.publicServices()
             .then((result) => {
-                if (active) setServices(result.slice(0, 6));
+                if (active) {
+                    const list = Array.isArray(result) ? result : [];
+                    setServices(list.slice(0, 6));
+                }
             })
             .catch(() => {
                 if (active) setError(t.landing.servicesUnavailable);

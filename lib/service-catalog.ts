@@ -248,9 +248,10 @@ export function normalizeService(service: Service): NormalizedService {
 }
 
 export function normalizeServices(
-    services: Service[],
+    services: Service[] | unknown,
 ): NormalizedService[] {
-    return services.map(normalizeService);
+    const list = Array.isArray(services) ? services : [];
+    return list.map(normalizeService);
 }
 
 export function getPlatformOptions(): PlatformName[] {
@@ -258,32 +259,37 @@ export function getPlatformOptions(): PlatformName[] {
 }
 
 export function getPlatformsWithServices(
-    services: NormalizedService[],
+    services: NormalizedService[] | unknown,
 ): PlatformName[] {
+    const list = Array.isArray(services) ? services : [];
     const platforms = new Set<PlatformName>();
 
-    for (const service of services) {
-        platforms.add(service.platform);
+    for (const service of list) {
+        if (service && service.platform) {
+            platforms.add(service.platform);
+        }
     }
 
     return PLATFORM_ORDER.filter((platform) => platforms.has(platform));
 }
 
 export function getPlatformServices(
-    services: NormalizedService[],
+    services: NormalizedService[] | unknown,
     platform: PlatformName,
 ): NormalizedService[] {
-    return services.filter((service) => service.platform === platform);
+    const list = Array.isArray(services) ? services : [];
+    return list.filter((service) => service && service.platform === platform);
 }
 
 export function getServiceTypes(
-    services: NormalizedService[],
+    services: NormalizedService[] | unknown,
     platform: PlatformName,
 ): string[] {
+    const list = Array.isArray(services) ? services : [];
     const types = new Set<string>();
 
-    for (const service of services) {
-        if (service.platform === platform) {
+    for (const service of list) {
+        if (service && service.platform === platform && service.serviceType) {
             types.add(service.serviceType);
         }
     }
@@ -297,28 +303,32 @@ export function getServiceTypes(
 }
 
 export function getServicesByType(
-    services: NormalizedService[],
+    services: NormalizedService[] | unknown,
     platform: PlatformName,
     serviceType: string,
 ): NormalizedService[] {
-    return services.filter(
+    const list = Array.isArray(services) ? services : [];
+    return list.filter(
         (service) =>
+            service &&
             service.platform === platform &&
             service.serviceType === serviceType,
     );
 }
 
 export function searchServices(
-    services: NormalizedService[],
+    services: NormalizedService[] | unknown,
     query: string,
 ): NormalizedService[] {
+    const list = Array.isArray(services) ? services : [];
     const term = query.trim().toLocaleLowerCase();
 
     if (!term) {
-        return services;
+        return list;
     }
 
-    return services.filter((service) => {
+    return list.filter((service) => {
+        if (!service) return false;
         const haystack = [
             service.name,
             service.category,

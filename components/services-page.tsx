@@ -40,7 +40,7 @@ export function ServicesPage() {
         api.publicServices()
             .then((result) => {
                 if (active) {
-                    setServices(result);
+                    setServices(Array.isArray(result) ? result : []);
                 }
             })
             .catch(() => {
@@ -59,9 +59,11 @@ export function ServicesPage() {
         };
     }, [t.servicesPage.errorText]);
 
+    const safeServices = useMemo(() => (Array.isArray(services) ? services : []), [services]);
+
     const normalizedCatalog = useMemo(
-        () => normalizeServices(services),
-        [services]
+        () => normalizeServices(safeServices),
+        [safeServices]
     );
     const platforms = useMemo(() => getPlatformOptions(), []);
     const availablePlatforms = useMemo(() => getPlatformsWithServices(normalizedCatalog), [normalizedCatalog]);

@@ -28,7 +28,7 @@ export function ServiceDetailPage({ id }: { id: string }) {
         api.publicServices()
             .then((result) => {
                 if (active) {
-                    setServices(result);
+                    setServices(Array.isArray(result) ? result : []);
                 }
             })
             .catch(() => {
@@ -47,14 +47,16 @@ export function ServiceDetailPage({ id }: { id: string }) {
         };
     }, [t.serviceDetail.unavailable]);
 
+    const safeServices = useMemo(() => (Array.isArray(services) ? services : []), [services]);
+
     const service = useMemo(
-        () => services.find((item) => String(item.service) === id) ?? null,
-        [id, services],
+        () => safeServices.find((item) => String(item.service) === id) ?? null,
+        [id, safeServices],
     );
 
     const relatedServices = useMemo(
-        () => services.filter((item) => item.category === service?.category && item.service !== service?.service).slice(0, 3),
-        [service, services],
+        () => safeServices.filter((item) => item.category === service?.category && item.service !== service?.service).slice(0, 3),
+        [service, safeServices],
     );
 
     if (loading) {

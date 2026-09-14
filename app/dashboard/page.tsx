@@ -189,7 +189,7 @@ function DashboardApp() {
 
     api.services(token)
       .then((data) => {
-        setServices(data);
+        setServices(Array.isArray(data) ? data : []);
 
         /*
          * Do not preserve an old service after
@@ -214,7 +214,12 @@ function DashboardApp() {
 
     api.orders(token)
       .then((data) => {
-        setOrders(data.items);
+        const list = Array.isArray(data)
+          ? data
+          : data && typeof data === "object" && "items" in data && Array.isArray((data as { items: unknown }).items)
+            ? (data as { items: Order[] }).items
+            : [];
+        setOrders(list);
       })
       .catch((cause) => {
         if (unavailable(cause)) {
@@ -344,25 +349,34 @@ function DashboardApp() {
   /*
    * Order statistics.
    */
-  const pending = orders.filter((order) =>
-    [
-      "pending",
-      "processing",
-      "in progress",
-    ].includes(
-      order.status.toLowerCase(),
-    ),
-  ).length;
+  const safeOrders = useMemo(() => (Array.isArray(orders) ? orders : []), [orders]);
 
+  const pending = useMemo(
+    () =>
+      safeOrders.filter(
+        (order) =>
+          order &&
+          [
+            "pending",
+            "processing",
+            "in progress",
+          ].includes((order.status || "").toLowerCase()),
+      ).length,
+    [safeOrders],
+  );
 
-  const completed = orders.filter((order) =>
-    [
-      "completed",
-      "complete",
-    ].includes(
-      order.status.toLowerCase(),
-    ),
-  ).length;
+  const completed = useMemo(
+    () =>
+      safeOrders.filter(
+        (order) =>
+          order &&
+          [
+            "completed",
+            "complete",
+          ].includes((order.status || "").toLowerCase()),
+      ).length,
+    [safeOrders],
+  );
 
 
   /*
@@ -874,7 +888,7 @@ function DashboardApp() {
                     : ordersPending
                       ? "—"
                       : String(
-                        orders.length,
+                        safeOrders.length,
                       )
                 }
               />
@@ -936,7 +950,7 @@ function DashboardApp() {
 
 
               <OrdersTable
-                orders={orders.slice(0, 5)}
+                orders={safeOrders.slice(0, 5)}
                 loading={loadingOrders}
                 pending={ordersPending}
                 title={
@@ -1340,7 +1354,7 @@ function DashboardApp() {
 
 
             <OrdersTable
-              orders={orders}
+              orders={safeOrders}
               loading={loadingOrders}
               pending={ordersPending}
               title={
@@ -1576,6 +1590,8 @@ function ServicesGrid({
   pendingTitle: string;
   pendingText: string;
 }) {
+  const safeServices = Array.isArray(services) ? services : [];
+
   if (loading) {
     return (
       <div className="skeleton large" />
@@ -1593,7 +1609,7 @@ function ServicesGrid({
   }
 
 
-  if (!services.length) {
+  if (!safeServices.length) {
     return (
       <div className="empty-state">
 
@@ -1619,7 +1635,7 @@ function ServicesGrid({
    * use the same classification engine.
    */
   const normalized =
-    normalizeServices(services);
+    normalizeServices(safeServices);
 
 
   /*
@@ -1753,6 +1769,8 @@ function OrdersTable({
     status: string;
   };
 }) {
+  const safeOrders = Array.isArray(orders) ? orders : [];
+
   if (loading) {
     return (
       <div className="skeleton large" />
@@ -1770,7 +1788,7 @@ function OrdersTable({
   }
 
 
-  if (!orders.length) {
+  if (!safeOrders.length) {
     return (
       <div className="empty-state">
 
@@ -1801,7 +1819,7 @@ function OrdersTable({
       </div>
 
 
-      {orders.map((order) => (
+      {safeOrders.map((order) => (
         <div
           className="table-row"
           key={order.id}
